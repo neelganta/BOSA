@@ -18,7 +18,6 @@ from sklearn.svm import SVC
 #import decisiontreeclassifier
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
-from IPython.display import SVG
 #import logisticregression classifier
 from sklearn.linear_model import LogisticRegression
 #import knn classifier
