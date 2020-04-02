@@ -39,8 +39,6 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 
 
-from collections import deque
-
 import warnings
 warnings.filterwarnings("ignore")
 #  Basketball Operations Seasonal Assistant
@@ -146,11 +144,8 @@ if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regres
     probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
     probs['id'] = score['id']
     probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
-    ids = []
-    ids = score['id']
-    ids = deque(ids)
-    ids.appendleft('Draft Prospects by ID') 
-    ids = list(ids)
+    ids = score['id'].tolist()
+    ids.insert(0, 'Draft Prospects by ID') 
     st.subheader('Predicting Prospect Success')
     selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
     if selector != 'Draft Prospects by ID':
@@ -265,11 +260,8 @@ if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree
     probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
     probs['id'] = score['id']
     probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
-    ids = []
-    ids = score['id']
-    ids = deque(ids)
-    ids.appendleft('Draft Prospects by ID') 
-    ids = list(ids)
+    ids = score['id'].tolist()
+    ids.insert(0, 'Draft Prospects by ID') 
     st.subheader('Predicting Prospect Success')
     selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
     if selector != 'Draft Prospects by ID':
