@@ -1,1 +1,1 @@
-web: gunicorn BOSA:app
+web: sh setup.sh && streamlit run BOSA.py
