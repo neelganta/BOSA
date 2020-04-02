@@ -4,8 +4,6 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
-import numpy as np
-import pandas as pd
 
 
 import sklearn
@@ -39,8 +37,6 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 
 
-# import warnings
-# warnings.filterwarnings("ignore")
 #  Basketball Operations Seasonal Assistant
 st.title('Brooklyn Nets BOSA Project')
 st.markdown('_Please see left sidebar for more details._')
