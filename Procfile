@@ -1,1 +1,1 @@
-web: gunicorn BOSA:app --preload
+web: gunicorn BOSA.py:app --preload
