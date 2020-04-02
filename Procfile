@@ -1,1 +1,1 @@
-web: gunicorn && streamlit run BOSA.py:app
+web: gunicorn BOSA:app --preload
