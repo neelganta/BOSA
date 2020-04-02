@@ -80,7 +80,7 @@ if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regres
     X_new_df = pd.DataFrame(X_new)
     X_new_df = X_new_df.rename(columns={0: 'Ranking', 1: 'ASTP', 2: 'BLKP'})
     X_train, X_test, y_train, y_test = train_test_split(X_new,y, test_size = 0.3, random_state = 0)
-    lr = LogisticRegression(C = 2.195254015709299, penalty = "l1")
+    lr = LogisticRegression(C = 2.195254015709299, penalty = "l1", solver='liblinear')
     lr.fit(X_train, y_train)
     acc = lr.score(X_test, y_test)
     st.markdown('**Accuracy Score**')
@@ -199,7 +199,7 @@ if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree
     X_clf_new_df = df[['Ranking', 'ASTP', 'Age', 'BLKP']].copy() #most accurate
     X_clf_new_df = X_clf_new_df.rename(columns={0: 'Ranking', 1: 'ASTP', 2: 'Age', 3: 'BLKP'})
     X_train, X_test, y_train, y_test = train_test_split(X_clf_new_df,y, test_size = 0.3, random_state = 0)
-    lr = LogisticRegression(C = 2.195254015709299, penalty = "l1")
+    lr = LogisticRegression(C = 2.195254015709299, penalty = "l1", solver='liblinear')
     lr.fit(X_train, y_train)
     acc = lr.score(X_test, y_test)
     st.markdown('**Accuracy Score**')
