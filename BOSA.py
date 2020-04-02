@@ -18,6 +18,7 @@ from sklearn.svm import SVC
 #import decisiontreeclassifier
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from IPython.display import SVG
 #import logisticregression classifier
 from sklearn.linear_model import LogisticRegression
 #import knn classifier
@@ -37,6 +38,9 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 
+
+# import warnings
+# warnings.filterwarnings("ignore")
 #  Basketball Operations Seasonal Assistant
 st.title('Brooklyn Nets BOSA Project')
 st.markdown('_Please see left sidebar for more details._')
