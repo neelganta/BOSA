@@ -1,1 +1,1 @@
-web: sh setup.sh && streamlit run BOSA.py
+worker: sh setup.sh && streamlit run BOSA.py
