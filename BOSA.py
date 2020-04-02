@@ -2,14 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 
 import sklearn
 
@@ -22,11 +20,8 @@ from sklearn.svm import SVC
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from IPython.display import SVG
-#from graphviz import Source
-from IPython.display import display
 #import logisticregression classifier
 from sklearn.linear_model import LogisticRegression
-import statsmodels.api as sm
 #import knn classifier
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -44,12 +39,6 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 
-
-import scikitplot as skplt
-
-# decision tree
-import graphviz
-from graphviz import Source
 
 from collections import deque
 
