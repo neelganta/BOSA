@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import plotly.figure_factory as ff
 
 
 import sklearn
@@ -85,6 +84,9 @@ if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regres
     cm =confusion_matrix(y_test,pred_dtc)
     cm = pd.DataFrame(cm)
     cm.columns = ['Neg', 'Pos']
+    x = ['NBA Success', 'No NBA Success']
+    y = ['NBA Success', 'No NBA Success']
+
     Row_list =[] 
     
     # Iterate over each row 
@@ -97,14 +99,26 @@ if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regres
         
     z = Row_list
 
-    x =['No NBA Success', 'NBA Success']
-    y=['No NBA Success', 'NBA Success']
-    # change each element of z to type string for annotations
-    z_text = [[str(x) for x in y] for y in z]
+    annotations = go.Annotations()
+    for n, row in enumerate(z):
+        for m, val in enumerate(row):
+            annotations.append(go.Annotation(text=str(z[n][m]), x=x[m], y=y[n],
+                                            xref='x1', yref='y1', showarrow = False, font = dict(color = 'white',
+                                size = 14)))
 
-    # set up figure 
-    fig = ff.create_annotated_heatmap(z, x=x, y=y, annotation_text=z_text, colorscale='Viridis')
-    # add title
+    trace = go.Heatmap(x=x, y=y, z=z, colorscale='Portland', showscale=False)
+
+    fig = go.Figure(data=go.Data([trace]))
+    fig['layout'].update(
+        title="Confustion Matrix",
+        annotations=annotations,
+        xaxis=go.XAxis(ticks='', side='top'),
+        yaxis=go.YAxis(ticks='', ticksuffix='  '),  # ticksuffix is a workaround to add a bit of padding
+    #     width=700,
+    #     height=700,
+    #     autosize=False
+    )
+
     fig.update_layout(title_text='<i><b>Confusion Matrix</b></i>',
                     #xaxis = dict(title='x'),
                     #yaxis = dict(title='x')
@@ -131,8 +145,10 @@ if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regres
 
     # adjust margins to make room for yaxis title
     fig.update_layout(margin=dict(t=50, l=200))
+
     # add colorbar
     fig['data'][0]['showscale'] = True
+
     st.plotly_chart(fig)
     predict_new = score[['Ranking', 'ASTP', 'BLKP']].copy()
     probs = lr.predict_proba(predict_new)
@@ -201,6 +217,9 @@ if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree
     cm=confusion_matrix(y_test,pred_clf)
     cm = pd.DataFrame(cm)
     cm.columns = ['Neg', 'Pos']
+    x = ['NBA Success', 'No NBA Success']
+    y = ['NBA Success', 'No NBA Success']
+
     Row_list =[] 
     
     # Iterate over each row 
@@ -213,14 +232,26 @@ if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree
         
     z = Row_list
 
-    x =['No NBA Success', 'NBA Success']
-    y=['No NBA Success', 'NBA Success']
-    # change each element of z to type string for annotations
-    z_text = [[str(x) for x in y] for y in z]
+    annotations = go.Annotations()
+    for n, row in enumerate(z):
+        for m, val in enumerate(row):
+            annotations.append(go.Annotation(text=str(z[n][m]), x=x[m], y=y[n],
+                                            xref='x1', yref='y1', showarrow = False, font = dict(color = 'white',
+                                size = 14)))
 
-    # set up figure 
-    fig = ff.create_annotated_heatmap(z, x=x, y=y, annotation_text=z_text, colorscale='Viridis')
-    # add title
+    trace = go.Heatmap(x=x, y=y, z=z, colorscale='Portland', showscale=False)
+
+    fig = go.Figure(data=go.Data([trace]))
+    fig['layout'].update(
+        title="Confustion Matrix",
+        annotations=annotations,
+        xaxis=go.XAxis(ticks='', side='top'),
+        yaxis=go.YAxis(ticks='', ticksuffix='  '),  # ticksuffix is a workaround to add a bit of padding
+    #     width=700,
+    #     height=700,
+    #     autosize=False
+    )
+
     fig.update_layout(title_text='<i><b>Confusion Matrix</b></i>',
                     #xaxis = dict(title='x'),
                     #yaxis = dict(title='x')
@@ -247,8 +278,11 @@ if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree
 
     # adjust margins to make room for yaxis title
     fig.update_layout(margin=dict(t=50, l=200))
+
     # add colorbar
     fig['data'][0]['showscale'] = True
+
+    st.plotly_chart(fig)
     st.plotly_chart(fig)
     predict_new_clf = score[['Ranking', 'ASTP', 'Age', 'BLKP']].copy()
     probs = lr.predict_proba(predict_new_clf)
