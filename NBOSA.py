@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly
 import plotly.express as px
 
 
@@ -13,24 +12,19 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import SVC
 
 #import decisiontreeclassifier
-from sklearn import tree
-from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from sklearn.tree import DecisionTreeClassifier
 #import logisticregression classifier
 from sklearn.linear_model import LogisticRegression
 #import knn classifier
 from sklearn.neighbors import KNeighborsClassifier
 
 #for validating your classification model
-from sklearn.metrics import classification_report, f1_score, accuracy_score, confusion_matrix
-from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split, GridSearchCV 
+from sklearn.model_selection import  cross_val_score, train_test_split
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc, roc_auc_score
+from sklearn.metrics import roc_auc_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
 # feature selection
-from sklearn.feature_selection import RFE
-from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 
