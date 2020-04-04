@@ -15,8 +15,6 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 #import logisticregression classifier
 from sklearn.linear_model import LogisticRegression
-#import knn classifier
-from sklearn.neighbors import KNeighborsClassifier
 
 #for validating your classification model
 from sklearn.model_selection import  cross_val_score, train_test_split
