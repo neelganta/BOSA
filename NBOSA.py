@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 
 
 import sklearn
@@ -64,106 +63,40 @@ y = df['NBA_Success']
 X = df.drop(['NBA_Success', 'id'], axis=1)
 
 st.subheader('Machine Learning Models')
-alg = ['Select Algorithm', 'Chi-Squared Logistic Regression', 'Random Forest Decision Tree']
+alg = ['Select Algorithm', 'Decision Tree Classifier', 'Chi-Squared - Logistic Regression', 'Gradient Boosted Decision Trees', 
+'Random Forest Ensemble Decision Trees', 'Random Forest Ensemble Decision Trees - Logistic Regression', 'Support Vector Machine', 'Neural Network']
 classifier = st.selectbox('Which classification algorithm would you like to use?', alg)
 
-if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regression':
+if classifier!= 'Select Algorithm' and classifier =='Chi-Squared - Logistic Regression':
     X_new = SelectKBest(chi2, k=3).fit_transform(X, y)
-    X_new_df = pd.DataFrame(X_new)
-    X_new_df = X_new_df.rename(columns={0: 'Ranking', 1: 'ASTP', 2: 'BLKP'})
     X_train, X_test, y_train, y_test = train_test_split(X_new,y, test_size = 0.3, random_state = 0)
-    lr = LogisticRegression(C = 2.195254015709299, penalty = "l1", solver='liblinear')
-    lr.fit(X_train, y_train)
-    acc = lr.score(X_test, y_test)
+    clf = LogisticRegression(C = 2.195254015709299, penalty = "l1", solver='liblinear')
+    clf.fit(X_train, y_train)
+    acc = clf.score(X_test, y_test)
     st.markdown('**Accuracy Score**')
     st.write(acc)
-    auc = (metrics.roc_auc_score(y_test, lr.predict(X_test)))
+    scores = cross_val_score(clf, X, y, scoring='accuracy', cv=10)
+    st.markdown('**Cross Validated Accuracy Score**')
+    st.write(scores.mean())
+    auc = (metrics.roc_auc_score(y_test, clf.predict(X_test)))
     st.markdown('**AUC - ROC Score **')
     st.write(auc)
-    pred_dtc = lr.predict(X_test)
-    cm =confusion_matrix(y_test,pred_dtc)
-    cm = pd.DataFrame(cm)
-    cm.columns = ['Neg', 'Pos']
-    x = ['NBA Success', 'No NBA Success']
-    y = ['NBA Success', 'No NBA Success']
-
-    Row_list =[] 
     
-    # Iterate over each row 
-    for index, rows in cm.iterrows(): 
-        # Create list for the current row 
-        my_list =[rows.Neg, rows.Pos] 
-        
-        # append the list to the final list 
-        Row_list.append(my_list) 
-        
-    z = Row_list
-
-    annotations = go.Annotations()
-    for n, row in enumerate(z):
-        for m, val in enumerate(row):
-            annotations.append(go.Annotation(text=str(z[n][m]), x=x[m], y=y[n],
-                                            xref='x1', yref='y1', showarrow = False, font = dict(color = 'white',
-                                size = 14)))
-
-    trace = go.Heatmap(x=x, y=y, z=z, colorscale='Portland', showscale=False)
-
-    fig = go.Figure(data=go.Data([trace]))
-    fig['layout'].update(
-        title="Confustion Matrix",
-        annotations=annotations,
-        xaxis=go.XAxis(ticks='', side='top'),
-        yaxis=go.YAxis(ticks='', ticksuffix='  '),  # ticksuffix is a workaround to add a bit of padding
-    #     width=700,
-    #     height=700,
-    #     autosize=False
-    )
-
-    fig.update_layout(title_text='<i><b>Confusion Matrix</b></i>',
-                    #xaxis = dict(title='x'),
-                    #yaxis = dict(title='x')
-                    )
-
-    # add custom xaxis title
-    fig.add_annotation(dict(font=dict(color="black",size=14),
-                            x=0.5,
-                            y=-0.15,
-                            showarrow=False,
-                            text="Actual Success",
-                            xref="paper",
-                            yref="paper"))
-
-    # add custom yaxis title
-    fig.add_annotation(dict(font=dict(color="black",size=14),
-                            x=-0.35,
-                            y=0.5,
-                            showarrow=False,
-                            text="Predicted Success",
-                            textangle=-90,
-                            xref="paper",
-                            yref="paper"))
-
-    # adjust margins to make room for yaxis title
-    fig.update_layout(margin=dict(t=50, l=200))
-
-    # add colorbar
-    fig['data'][0]['showscale'] = True
-
-    st.plotly_chart(fig)
+    st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/CSLRCM.png')
     predict_new = score[['Ranking', 'ASTP', 'BLKP']].copy()
-    probs = lr.predict_proba(predict_new)
+    probs = clf.predict_proba(predict_new)
     probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
     probs['id'] = score['id']
     probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
     ids = score['id'].tolist()
     ids.insert(0, 'Draft Prospects by ID') 
-    st.subheader('Predicting Prospect Success')
+    st.subheader('Predicting Prospect Success with Chi-Squared - Logistic Regression')
     selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
     if selector != 'Draft Prospects by ID':
         a = score.loc[score['id'] == selector]
         a = a[['Ranking', 'ASTP', 'BLKP']] #most accurate
-        a = lr.predict_proba(a)
-        b = pd.DataFrame(a).round(3)
+        a = clf.predict_proba(a)
+        b = pd.DataFrame(a).round(4)
         b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
         c=b.T.reset_index()
         c.columns=['NBA Success','Probability']
@@ -175,18 +108,52 @@ if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regres
             st.success("Draft Prospect " + str(selector) +" is "+ str((good*100).round(2)) + '%' +" likely to be successful.")
         elif good < .5:
             st.error("Draft Prospect " + str(selector) +" is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+        
+        st.subheader('Create your own Scatterplots of Draft Prospect Correlations')
+        scatter = probs.set_index('id').join(score.set_index('id'))
+        scatter = scatter.reset_index()
+        xaxis = st.selectbox('Select which feature you want on your x-axis.', scatter.columns)
+        yaxis = st.selectbox('Select which feature you want on your y-axis.', scatter.columns)
 
+        if(xaxis != 'id' and yaxis !='id'):
+            fig = px.scatter(scatter, x = xaxis, y =yaxis, hover_name = 'id', hover_data = [xaxis], trendline= 'ols' , color = yaxis)
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects ' + xaxis +' vs. ' + yaxis,
+                yaxis_title= yaxis
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+        else:
+            fig = px.scatter(scatter, x = "Ranking", y ='Probability of No NBA Success', hover_name = 'id', hover_data = ['Probability of No NBA Success'],  trendline = 'ols', color = 'Probability of No NBA Success')
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects Ranking vs. Probability of No NBA Success',
+                yaxis_title='Probability of No NBA Success'
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
         if st.checkbox('Show all Draft Prospect Probabilities'):
             probs
     
-        st.subheader('Create and Predict your own Draft Prospect')
+        st.subheader("Create and Predict your own Draft Prospect with Chi-Squared - Logistic Regression")
         rank = st.slider("Choose the Ranking of your player: ", min_value=1, max_value=60, value=30, step=1)
         ast = st.slider("Choose the Assist Percentage of your player: ", min_value=0.0, max_value=15.0, value=7.0, step=0.1)
         blk = st.slider("Choose the Block Percentage of your player: ", min_value=0.0, max_value=20.0, value=10.0, step=0.1)
         user_prediction_data = [[rank, ast, blk]]
         if st.button('PREDICT'):
-            a = lr.predict_proba(user_prediction_data)
-            b = pd.DataFrame(a).round(3)
+            a = clf.predict_proba(user_prediction_data)
+            b = pd.DataFrame(a).round(4)
             b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
             c=b.T.reset_index()
             c.columns=['NBA Success','Probability']
@@ -201,103 +168,38 @@ if classifier!= 'Select Algorithm' and classifier =='Chi-Squared Logistic Regres
                 st.error("Your Draft Prospect " + " is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
 
 
-if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree':
+elif classifier!= 'Select Algorithm' and classifier =='Random Forest Ensemble Decision Trees - Logistic Regression':
     X_clf_new_df = df[['Ranking', 'ASTP', 'Age', 'BLKP']].copy() #most accurate
     X_clf_new_df = X_clf_new_df.rename(columns={0: 'Ranking', 1: 'ASTP', 2: 'Age', 3: 'BLKP'})
     X_train, X_test, y_train, y_test = train_test_split(X_clf_new_df,y, test_size = 0.3, random_state = 0)
-    lr = LogisticRegression(C = 2.195254015709299, penalty = "l1", solver='liblinear')
-    lr.fit(X_train, y_train)
-    acc = lr.score(X_test, y_test)
+    clf = LogisticRegression(C = 2.195254015709299, penalty = "l1", solver='liblinear')
+    clf.fit(X_train, y_train)
+    acc = clf.score(X_test, y_test)
     st.markdown('**Accuracy Score**')
     st.write(acc)
-    auc = (metrics.roc_auc_score(y_test, lr.predict(X_test)))
+    auc = (metrics.roc_auc_score(y_test, clf.predict(X_test)))
+    scores = cross_val_score(clf, X, y, scoring='accuracy', cv=10)
+    st.markdown('**Cross Validated Accuracy Score**')
+    st.write(scores.mean())
     st.markdown('**AUC - ROC Score **')
     st.write(auc)
-    pred_clf = lr.predict(X_test)
-    cm=confusion_matrix(y_test,pred_clf)
-    cm = pd.DataFrame(cm)
-    cm.columns = ['Neg', 'Pos']
-    x = ['NBA Success', 'No NBA Success']
-    y = ['NBA Success', 'No NBA Success']
 
-    Row_list =[] 
-    
-    # Iterate over each row 
-    for index, rows in cm.iterrows(): 
-        # Create list for the current row 
-        my_list =[rows.Neg, rows.Pos] 
-        
-        # append the list to the final list 
-        Row_list.append(my_list) 
-        
-    z = Row_list
-
-    annotations = go.Annotations()
-    for n, row in enumerate(z):
-        for m, val in enumerate(row):
-            annotations.append(go.Annotation(text=str(z[n][m]), x=x[m], y=y[n],
-                                            xref='x1', yref='y1', showarrow = False, font = dict(color = 'white',
-                                size = 14)))
-
-    trace = go.Heatmap(x=x, y=y, z=z, colorscale='Portland', showscale=False)
-
-    fig = go.Figure(data=go.Data([trace]))
-    fig['layout'].update(
-        title="Confustion Matrix",
-        annotations=annotations,
-        xaxis=go.XAxis(ticks='', side='top'),
-        yaxis=go.YAxis(ticks='', ticksuffix='  '),  # ticksuffix is a workaround to add a bit of padding
-    #     width=700,
-    #     height=700,
-    #     autosize=False
-    )
-
-    fig.update_layout(title_text='<i><b>Confusion Matrix</b></i>',
-                    #xaxis = dict(title='x'),
-                    #yaxis = dict(title='x')
-                    )
-
-    # add custom xaxis title
-    fig.add_annotation(dict(font=dict(color="black",size=14),
-                            x=0.5,
-                            y=-0.15,
-                            showarrow=False,
-                            text="Actual Success",
-                            xref="paper",
-                            yref="paper"))
-
-    # add custom yaxis title
-    fig.add_annotation(dict(font=dict(color="black",size=14),
-                            x=-0.35,
-                            y=0.5,
-                            showarrow=False,
-                            text="Predicted Success",
-                            textangle=-90,
-                            xref="paper",
-                            yref="paper"))
-
-    # adjust margins to make room for yaxis title
-    fig.update_layout(margin=dict(t=50, l=200))
-
-    # add colorbar
-    fig['data'][0]['showscale'] = True
-
-    st.plotly_chart(fig)
-    st.plotly_chart(fig)
-    predict_new_clf = score[['Ranking', 'ASTP', 'Age', 'BLKP']].copy()
-    probs = lr.predict_proba(predict_new_clf)
+    st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/RFELRCM.png')
+            
+    predict_new_dt = score[['Ranking', 'ASTP', 'Age', 'BLKP']].copy()
+    probs = clf.predict_proba(predict_new_dt)
     probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
     probs['id'] = score['id']
     probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
     ids = score['id'].tolist()
     ids.insert(0, 'Draft Prospects by ID') 
-    st.subheader('Predicting Prospect Success')
+    st.subheader('Predicting Prospect Success with Random Forest Ensemble Decision Trees - Logistic Regression')
     selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
     if selector != 'Draft Prospects by ID':
         a = score.loc[score['id'] == selector]
         a = a[['Ranking', 'ASTP', 'Age', 'BLKP']] #most accurate
-        a = lr.predict_proba(a)
-        b = pd.DataFrame(a).round(3)
+        a = clf.predict_proba(a)
+        b = pd.DataFrame(a).round(4)
         b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
         c=b.T.reset_index()
         c.columns=['NBA Success','Probability']
@@ -309,17 +211,53 @@ if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree
             st.success("Draft Prospect " + str(selector) +" is "+ str((good*100).round(2)) + '%' +" likely to be successful.")
         elif good < .5:
             st.error("Draft Prospect " + str(selector) +" is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+
+        st.subheader('Create your own Scatterplots of Draft Prospect Correlations')
+        scatter = probs.set_index('id').join(score.set_index('id'))
+        scatter = scatter.reset_index()
+        xaxis = st.selectbox('Select which feature you want on your x-axis.', scatter.columns)
+        yaxis = st.selectbox('Select which feature you want on your y-axis.', scatter.columns)
+
+        if(xaxis != 'id' and yaxis !='id'):
+            fig = px.scatter(scatter, x = xaxis, y =yaxis, hover_name = 'id', hover_data = [xaxis], trendline= 'ols' , color = yaxis)
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects ' + xaxis +' vs. ' + yaxis,
+                yaxis_title= yaxis
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+        else:
+            fig = px.scatter(scatter, x = "Ranking", y ='Probability of No NBA Success', hover_name = 'id', hover_data = ['Probability of No NBA Success'],  trendline = 'ols', color = 'Probability of No NBA Success')
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects Ranking vs. Probability of No NBA Success',
+                yaxis_title='Probability of No NBA Success'
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+
         if st.checkbox('Show all Draft Prospect Probabilities'):
             probs
-        st.subheader('Create and Predict your own Draft Prospect')
+        st.subheader("Create and Predict your own Draft Prospect with Random Forest Ensemble Decision Trees - Logistic Regression")
         rank = st.slider("Choose the Ranking of your player: ", min_value=1, max_value=60, value=30, step=1)
         age = st.slider("Choose the Age of your player: ", min_value=18.0, max_value=30.0, value=20.0, step=0.1)
         ast = st.slider("Choose the Assist Percentage of your player: ", min_value=0.0, max_value=15.0, value=7.0, step=0.1)
         blk = st.slider("Choose the Block Percentage of your player: ", min_value=0.0, max_value=20.0, value=10.0, step=0.1)
         user_prediction_data = [[rank, ast, age, blk]]
         if st.button('PREDICT'):
-            a = lr.predict_proba(user_prediction_data)
-            b = pd.DataFrame(a).round(3)
+            a = clf.predict_proba(user_prediction_data)
+            b = pd.DataFrame(a).round(4)
             b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
             c=b.T.reset_index()
             c.columns=['NBA Success','Probability']
@@ -334,6 +272,534 @@ if classifier!= 'Select Algorithm' and classifier =='Random Forest Decision Tree
                 st.error("Your Draft Prospect " + " is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
 
 
+elif classifier!= 'Select Algorithm' and classifier =='Random Forest Ensemble Decision Trees':
+    X = df[['Ranking', 'Age', 'ASTP', 'STLP', 'PER']].copy()
+    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state = 42)
+    clf = RandomForestClassifier(n_estimators=1000)    #building 1000 decision trees
+    clf=clf.fit(X_train, y_train)
+    acc = clf.score(X_test, y_test)
+    st.markdown('**Accuracy Score**')
+    st.write(acc)
+    auc = (metrics.roc_auc_score(y_test, clf.predict(X_test)))
+    scores = cross_val_score(clf, X, y, scoring='accuracy', cv=10)
+    st.markdown('**Cross Validated Accuracy Score**')
+    st.write(scores.mean())
+    st.markdown('**AUC - ROC Score **')
+    st.write(auc)
+
+    st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/RFECM.png')
+    
+    predict_new_dt = score[['Ranking', 'Age', 'ASTP', 'STLP', 'PER']].copy()
+    probs = clf.predict_proba(predict_new_dt)
+    probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
+    probs['id'] = score['id']
+    probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
+    ids = score['id'].tolist()
+    ids.insert(0, 'Draft Prospects by ID') 
+    st.subheader('Predicting Prospect Success with Random Forest Ensemble Decision Trees')
+    selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
+    if selector != 'Draft Prospects by ID':
+        a = score.loc[score['id'] == selector]
+        a = a[['Ranking', 'Age', 'ASTP', 'STLP', 'PER']] 
+        a = clf.predict_proba(a)
+        b = pd.DataFrame(a).round(4)
+        b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+        c=b.T.reset_index()
+        c.columns=['NBA Success','Probability']
+        fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+        fig.update_layout(title='Draft Prospect '+ str(selector))
+        st.plotly_chart(fig)
+        good = b.values[0][1]
+        if good > .5:
+            st.success("Draft Prospect " + str(selector) +" is "+ str((good*100).round(2)) + '%' +" likely to be successful.")
+        elif good < .5:
+            st.error("Draft Prospect " + str(selector) +" is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+
+        st.subheader('Create your own Scatterplots of Draft Prospect Correlations')
+        scatter = probs.set_index('id').join(score.set_index('id'))
+        scatter = scatter.reset_index()
+        xaxis = st.selectbox('Select which feature you want on your x-axis.', scatter.columns)
+        yaxis = st.selectbox('Select which feature you want on your y-axis.', scatter.columns)
+
+        if(xaxis != 'id' and yaxis !='id'):
+            fig = px.scatter(scatter, x = xaxis, y =yaxis, hover_name = 'id', hover_data = [xaxis], trendline= 'ols' , color = yaxis)
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects ' + xaxis +' vs. ' + yaxis,
+                yaxis_title= yaxis
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+        else:
+            fig = px.scatter(scatter, x = "Ranking", y ='Probability of No NBA Success', hover_name = 'id', hover_data = ['Probability of No NBA Success'],  trendline = 'ols', color = 'Probability of No NBA Success')
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects Ranking vs. Probability of No NBA Success',
+                yaxis_title='Probability of No NBA Success'
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+
+        if st.checkbox('Show all Draft Prospect Probabilities'):
+            probs
+        st.subheader("Create and Predict your own Draft Prospect with Random Forest Ensemble Decision Trees")
+        rank = st.slider("Choose the Ranking of your player: ", min_value=1, max_value=60, value=30, step=1)
+        age = st.slider("Choose the Age of your player: ", min_value=18.0, max_value=30.0, value=20.0, step=0.1)
+        ast = st.slider("Choose the Assist Percentage of your player: ", min_value=0.0, max_value=15.0, value=7.0, step=0.1)
+        stl = st.slider("Choose the Steal Percentage of your player: ", min_value=0.0, max_value=5.0, value=2.0, step=0.1)
+        per = st.slider("Choose the Player Efficiency Rating of your player: ", min_value=0.0, max_value=50.0, value=15.0, step=0.1)
+
+        user_prediction_data = [[rank, age, ast, stl, per]]
+        if st.button('PREDICT'):
+            a = clf.predict_proba(user_prediction_data)
+            b = pd.DataFrame(a).round(4)
+            b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+            c=b.T.reset_index()
+            c.columns=['NBA Success','Probability']
+            fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+            fig.update_layout(title='Your Draft Prospect ')
+            st.plotly_chart(fig)
+            good = b.values[0][1]
+            if good > .5:
+                st.success("Your Draft Prospect " + " is "+ str((good*100).round(2))+ '%' +" likely to be successful.")
+                st.balloons()
+            elif good < .5:
+                st.error("Your Draft Prospect " + " is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+
+
+### DECISION TREE CLASSIFIER
+
+elif classifier!= 'Select Algorithm' and classifier =='Decision Tree Classifier':
+    X_new = df[['Ranking', 'FTp', 'TOVP', 'ASTP']].copy()
+    X_train, X_test, y_train, y_test = train_test_split(X_new,y, test_size = 0.3, random_state = 42)
+    # You can make a simpler decision tree ... name the model "dt_simple" (max_depth=3, min_samples_leaf=5)
+    dt_simple = DecisionTreeClassifier(max_depth=3, min_samples_leaf=5)
+    # Train a decision tree model
+    dt_simple = dt_simple.fit(X_train, y_train)
+    acc = dt_simple.score(X_test, y_test)
+    st.markdown('**Accuracy Score**')
+    st.write(acc)
+    auc = (metrics.roc_auc_score(y_test, dt_simple.predict(X_test)))
+    scores = cross_val_score(dt_simple, X, y, scoring='accuracy', cv=10)
+    st.markdown('**Cross Validated Accuracy Score**')
+    st.write(scores.mean())
+    st.markdown('**AUC - ROC Score **')
+    st.write(auc)
+
+    st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/DTCM.png')
+    
+    predict_new_dt = score[['Ranking', 'FTp', 'TOVP', 'ASTP']].copy()
+    probs = dt_simple.predict_proba(predict_new_dt)
+    probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
+    probs['id'] = score['id']
+    probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
+    ids = score['id'].tolist()
+    ids.insert(0, 'Draft Prospects by ID') 
+    st.subheader('Predicting Prospect Success with Decision Tree Classifier')
+    selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
+    if selector != 'Draft Prospects by ID':
+        a = score.loc[score['id'] == selector]
+        a = a[['Ranking', 'ASTP', 'Age', 'BLKP']] #most accurate
+        a = dt_simple.predict_proba(a)
+        b = pd.DataFrame(a).round(4)
+        b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+        c=b.T.reset_index()
+        c.columns=['NBA Success','Probability']
+        fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+        fig.update_layout(title='Draft Prospect '+ str(selector))
+        st.plotly_chart(fig)
+        good = b.values[0][1]
+        if good > .5:
+            st.success("Draft Prospect " + str(selector) +" is "+ str((good*100).round(2)) + '%' +" likely to be successful.")
+        elif good < .5:
+            st.error("Draft Prospect " + str(selector) +" is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+
+        st.subheader('Create your own Scatterplots of Draft Prospect Correlations')
+        scatter = probs.set_index('id').join(score.set_index('id'))
+        scatter = scatter.reset_index()
+        xaxis = st.selectbox('Select which feature you want on your x-axis.', scatter.columns)
+        yaxis = st.selectbox('Select which feature you want on your y-axis.', scatter.columns)
+
+        if(xaxis != 'id' and yaxis !='id'):
+            fig = px.scatter(scatter, x = xaxis, y =yaxis, hover_name = 'id', hover_data = [xaxis], trendline= 'ols' , color = yaxis)
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects ' + xaxis +' vs. ' + yaxis,
+                yaxis_title= yaxis
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+        else:
+            fig = px.scatter(scatter, x = "Ranking", y ='Probability of No NBA Success', hover_name = 'id', hover_data = ['Probability of No NBA Success'],  trendline = 'ols', color = 'Probability of No NBA Success')
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects Ranking vs. Probability of No NBA Success',
+                yaxis_title='Probability of No NBA Success'
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+
+        if st.checkbox('Show all Draft Prospect Probabilities'):
+            probs
+
+        st.subheader("Create and Predict your own Draft Prospect with  Decision Tree Classifier")
+        rank = st.slider("Choose the Ranking of your player: ", min_value=1, max_value=60, value=30, step=1)
+        ftp = st.slider("Choose the Free Throw percentage of your player: ", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+        ast = st.slider("Choose the Assist Percentage of your player: ", min_value=0.0, max_value=15.0, value=7.0, step=0.1)
+        tov = st.slider("Choose the Turnover Percentage of your player: ", min_value=3.0, max_value=30.0, value=10.0, step=0.1)
+        user_prediction_data = [[rank, ftp, tov, ast]]
+        if st.button('PREDICT'):
+            a = dt_simple.predict_proba(user_prediction_data)
+            b = pd.DataFrame(a).round(4)
+            b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+            c=b.T.reset_index()
+            c.columns=['NBA Success','Probability']
+            fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+            fig.update_layout(title='Your Draft Prospect ')
+            st.plotly_chart(fig)
+            good = b.values[0][1]
+            if good > .5:
+                st.success("Your Draft Prospect " + " is "+ str((good*100).round(2))+ '%' +" likely to be successful.")
+                st.balloons()
+            elif good < .5:
+                st.error("Your Draft Prospect " + " is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+            st.subheader('Decision Tree')
+            st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/BOSA_dt.png')
+
+elif classifier!= 'Select Algorithm' and classifier =='Gradient Boosted Decision Trees':
+    X = df[['Ranking', 'STLP', 'FTp', '3PAr', 'Age']].copy()
+    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state = 42)
+    clf = GradientBoostingClassifier(n_estimators=1000)    #building 1000 decision trees
+    clf=clf.fit(X_train, y_train)
+    acc = clf.score(X_test, y_test)
+    st.markdown('**Accuracy Score**')
+    st.write(acc)
+    auc = (metrics.roc_auc_score(y_test, clf.predict(X_test)))
+    scores = cross_val_score(clf, X, y, scoring='accuracy', cv=10)
+    st.markdown('**Cross Validated Accuracy Score**')
+    st.write(scores.mean())
+    st.markdown('**AUC - ROC Score **')
+    st.write(auc)
+
+    st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/GBCM.png')
+    
+    predict_new_dt = score[['Ranking', 'STLP', 'FTp', '3PAr', 'Age']].copy()
+    probs = clf.predict_proba(predict_new_dt)
+    probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
+    probs['id'] = score['id']
+    probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
+    ids = score['id'].tolist()
+    ids.insert(0, 'Draft Prospects by ID') 
+    st.subheader('Predicting Prospect Success with Gradient Boosted Decision Trees')
+    selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
+    if selector != 'Draft Prospects by ID':
+        a = score.loc[score['id'] == selector]
+        a = a[['Ranking', 'STLP', 'FTp', '3PAr', 'Age']] 
+        a = clf.predict_proba(a)
+        b = pd.DataFrame(a).round(4)
+        b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+        c=b.T.reset_index()
+        c.columns=['NBA Success','Probability']
+        fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+        fig.update_layout(title='Draft Prospect '+ str(selector))
+        st.plotly_chart(fig)
+        good = b.values[0][1]
+        if good > .5:
+            st.success("Draft Prospect " + str(selector) +" is "+ str((good*100).round(2)) + '%' +" likely to be successful.")
+        elif good < .5:
+            st.error("Draft Prospect " + str(selector) +" is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+
+        st.subheader('Create your own Scatterplots of Draft Prospect Correlations')
+        scatter = probs.set_index('id').join(score.set_index('id'))
+        scatter = scatter.reset_index()
+        xaxis = st.selectbox('Select which feature you want on your x-axis.', scatter.columns)
+        yaxis = st.selectbox('Select which feature you want on your y-axis.', scatter.columns)
+
+        if(xaxis != 'id' and yaxis !='id'):
+            fig = px.scatter(scatter, x = xaxis, y =yaxis, hover_name = 'id', hover_data = [xaxis], trendline= 'ols' , color = yaxis)
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects ' + xaxis +' vs. ' + yaxis,
+                yaxis_title= yaxis
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+        else:
+            fig = px.scatter(scatter, x = "Ranking", y ='Probability of No NBA Success', hover_name = 'id', hover_data = ['Probability of No NBA Success'],  trendline = 'ols', color = 'Probability of No NBA Success')
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects Ranking vs. Probability of No NBA Success',
+                yaxis_title='Probability of No NBA Success'
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+
+        if st.checkbox('Show all Draft Prospect Probabilities'):
+            probs
+
+        st.subheader("Create and Predict your own Draft Prospect with Gradient Boosted Decision Trees")
+        rank = st.slider("Choose the Ranking of your player: ", min_value=1, max_value=60, value=30, step=1)
+        age = st.slider("Choose the Age of your player: ", min_value=18.0, max_value=30.0, value=20.0, step=0.1)
+        ft = st.slider("Choose the Free Throw Percentage of your player: ", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+        stl = st.slider("Choose the Steal Percentage of your player: ", min_value=0.0, max_value=5.0, value=2.0, step=0.1)
+        tpa = st.slider("Choose the Three Point Attempt Rate of your player: ", min_value=0.0, max_value=1.0, value=0.50, step=0.01)
+
+        user_prediction_data = [[rank, stl, ft, tpa, age]]
+        if st.button('PREDICT'):
+            a = clf.predict_proba(user_prediction_data)
+            b = pd.DataFrame(a).round(4)
+            b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+            c=b.T.reset_index()
+            c.columns=['NBA Success','Probability']
+            fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+            fig.update_layout(title='Your Draft Prospect ')
+            st.plotly_chart(fig)
+            good = b.values[0][1]
+            if good > .5:
+                st.success("Your Draft Prospect " + " is "+ str((good*100).round(2))+ '%' +" likely to be successful.")
+                st.balloons()
+            elif good < .5:
+                st.error("Your Draft Prospect " + " is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+
+
+elif classifier!= 'Select Algorithm' and classifier =='Support Vector Machine':
+    X = df[['Ranking', 'STLP', 'FTp', '3PAr', 'Age']].copy()
+    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state = 42)
+    clf = SVC(gamma='scale', probability=True)    #building 1000 decision trees
+    clf=clf.fit(X_train, y_train)
+    acc = clf.score(X_test, y_test)
+    st.markdown('**Accuracy Score**')
+    st.write(acc)
+    auc = (metrics.roc_auc_score(y_test, clf.predict(X_test)))
+    scores = cross_val_score(clf, X, y, scoring='accuracy', cv=10)
+    st.markdown('**Cross Validated Accuracy Score**')
+    st.write(scores.mean())
+    st.markdown('**AUC - ROC Score **')
+    st.write(auc)
+
+    st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/SVMCM.png')
+
+    predict_new_dt = score[['Ranking', 'STLP', 'FTp', '3PAr', 'Age']].copy()
+    probs = clf.predict_proba(predict_new_dt)
+    probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
+    probs['id'] = score['id']
+    probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
+    ids = score['id'].tolist()
+    ids.insert(0, 'Draft Prospects by ID') 
+    st.subheader('Predicting Prospect Success with Support Vector Machine')
+    selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
+    if selector != 'Draft Prospects by ID':
+        a = score.loc[score['id'] == selector]
+        a = a[['Ranking', 'STLP', 'FTp', '3PAr', 'Age']] 
+        a = clf.predict_proba(a)
+        b = pd.DataFrame(a).round(4)
+        b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+        c=b.T.reset_index()
+        c.columns=['NBA Success','Probability']
+        fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+        fig.update_layout(title='Draft Prospect '+ str(selector))
+        st.plotly_chart(fig)
+        good = b.values[0][1]
+        if good > .5:
+            st.success("Draft Prospect " + str(selector) +" is "+ str((good*100).round(2)) + '%' +" likely to be successful.")
+        elif good < .5:
+            st.error("Draft Prospect " + str(selector) +" is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+    
+        st.subheader('Create your own Scatterplots of Draft Prospect Correlations')
+        scatter = probs.set_index('id').join(score.set_index('id'))
+        scatter = scatter.reset_index()
+        xaxis = st.selectbox('Select which feature you want on your x-axis.', scatter.columns)
+        yaxis = st.selectbox('Select which feature you want on your y-axis.', scatter.columns)
+
+        if(xaxis != 'id' and yaxis !='id'):
+            fig = px.scatter(scatter, x = xaxis, y =yaxis, hover_name = 'id', hover_data = [xaxis], trendline= 'ols' , color = yaxis)
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects ' + xaxis +' vs. ' + yaxis,
+                yaxis_title= yaxis
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+        else:
+            fig = px.scatter(scatter, x = "Ranking", y ='Probability of No NBA Success', hover_name = 'id', hover_data = ['Probability of No NBA Success'],  trendline = 'ols', color = 'Probability of No NBA Success')
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects Ranking vs. Probability of No NBA Success',
+                yaxis_title='Probability of No NBA Success'
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+
+        if st.checkbox('Show all Draft Prospect Probabilities'):
+            probs
+
+        st.subheader("Create and Predict your own Draft Prospect with Support Vector Machine")
+        rank = st.slider("Choose the Ranking of your player: ", min_value=1, max_value=60, value=30, step=1)
+        age = st.slider("Choose the Age of your player: ", min_value=18.0, max_value=30.0, value=20.0, step=0.1)
+        ft = st.slider("Choose the Free Throw Percentage of your player: ", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+        stl = st.slider("Choose the Steal Percentage of your player: ", min_value=0.0, max_value=5.0, value=2.0, step=0.1)
+        tpa = st.slider("Choose the Three Point Attempt Rate of your player: ", min_value=0.0, max_value=1.0, value=0.50, step=0.01)
+
+        user_prediction_data = [[rank, stl, ft, tpa, age]]
+        if st.button('PREDICT'):
+            a = clf.predict_proba(user_prediction_data)
+            b = pd.DataFrame(a).round(4)
+            b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+            c=b.T.reset_index()
+            c.columns=['NBA Success','Probability']
+            fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+            fig.update_layout(title='Your Draft Prospect ')
+            st.plotly_chart(fig)
+            good = b.values[0][1]
+            if good > .5:
+                st.success("Your Draft Prospect " + " is "+ str((good*100).round(2))+ '%' +" likely to be successful.")
+                st.balloons()
+            elif good < .5:
+                st.error("Your Draft Prospect " + " is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+
+elif classifier!= 'Select Algorithm' and classifier =='Neural Network':
+    X = df[['Ranking', 'ASTP', 'BLKP']].copy()
+    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state = 42)
+    clf = MLPClassifier(solver='lbfgs', max_iter=500) 
+    clf=clf.fit(X_train, y_train)
+    acc = clf.score(X_test, y_test)
+    st.markdown('**Accuracy Score**')
+    st.write(acc)
+    auc = (metrics.roc_auc_score(y_test, clf.predict(X_test)))
+    scores = cross_val_score(clf, X, y, scoring='accuracy', cv=10)
+    st.markdown('**Cross Validated Accuracy Score**')
+    st.write(scores.mean())
+    st.markdown('**AUC - ROC Score **')
+    st.write(auc)
+    if(auc > .50):
+        st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/NNCM.png')
+    else:
+        st.image('https://raw.githubusercontent.com/neelganta/neel_project/master/NN50CM.png')
+    predict_new_dt = score[['Ranking', 'ASTP', 'BLKP']].copy()
+    probs = clf.predict_proba(predict_new_dt)
+    probs = pd.DataFrame(probs, columns=['Probability of No NBA Success', 'Probability of NBA Success'])
+    probs['id'] = score['id']
+    probs = probs[['id', 'Probability of No NBA Success', 'Probability of NBA Success']]
+    ids = score['id'].tolist()
+    ids.insert(0, 'Draft Prospects by ID') 
+    st.subheader('Predicting Prospect Success with Neural Networks')
+    selector = st.selectbox("Select a Draft Prospect's ID to predict their NBA success.", ids)     
+    if selector != 'Draft Prospects by ID':
+        a = score.loc[score['id'] == selector]
+        a = a[['Ranking', 'ASTP', 'BLKP']] 
+        a = clf.predict_proba(a)
+        b = pd.DataFrame(a).round(4)
+        b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+        c=b.T.reset_index()
+        c.columns=['NBA Success','Probability']
+        fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+        fig.update_layout(title='Draft Prospect '+ str(selector))
+        st.plotly_chart(fig)
+        good = b.values[0][1]
+        if good > .5:
+            st.success("Draft Prospect " + str(selector) +" is "+ str((good*100).round(2)) + '%' +" likely to be successful.")
+        elif good < .5:
+            st.error("Draft Prospect " + str(selector) +" is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
+    
+        st.subheader('Create your own Scatterplots of Draft Prospect Correlations')
+        scatter = probs.set_index('id').join(score.set_index('id'))
+        scatter = scatter.reset_index()
+        xaxis = st.selectbox('Select which feature you want on your x-axis.', scatter.columns)
+        yaxis = st.selectbox('Select which feature you want on your y-axis.', scatter.columns)
+
+        if(xaxis != 'id' and yaxis !='id'):
+            fig = px.scatter(scatter, x = xaxis, y =yaxis, hover_name = 'id', hover_data = [xaxis], trendline= 'ols' , color = yaxis)
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects ' + xaxis +' vs. ' + yaxis,
+                yaxis_title= yaxis
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+        else:
+            fig = px.scatter(scatter, x = "Ranking", y ='Probability of No NBA Success', hover_name = 'id', hover_data = ['Probability of No NBA Success'],  trendline = 'ols', color = 'Probability of No NBA Success')
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                height=500,
+                title_text='All Draft Prospects Ranking vs. Probability of No NBA Success',
+                yaxis_title='Probability of No NBA Success'
+            )
+
+            fig.data[0].update(selectedpoints=3605,
+                            selected=dict(marker=dict(color='red')),#color of selected points
+                            unselected=dict(marker=dict(#color of unselected pts
+                                            opacity=0.8)))
+            st.plotly_chart(fig)
+
+        if st.checkbox('Show all Draft Prospect Probabilities'):
+            probs
+
+        st.subheader("Create and Predict your own Draft Prospect with Neural Networks")
+        rank = st.slider("Choose the Ranking of your player: ", min_value=1, max_value=60, value=30, step=1)
+        ast = st.slider("Choose the Assist Percentage of your player: ", min_value=0.0, max_value=15.0, value=7.0, step=0.1)
+        blk = st.slider("Choose the Block Percentage of your player: ", min_value=0.0, max_value=20.0, value=10.0, step=0.1)
+        user_prediction_data = [[rank, ast, blk]]
+
+        if st.button('PREDICT'):
+            a = clf.predict_proba(user_prediction_data)
+            b = pd.DataFrame(a).round(4)
+            b.columns=['Probability of No NBA Success', 'Probability of NBA Success']
+            c=b.T.reset_index()
+            c.columns=['NBA Success','Probability']
+            fig = px.bar(c, x='NBA Success', y='Probability', text= 'Probability')
+            fig.update_layout(title='Your Draft Prospect ')
+            st.plotly_chart(fig)
+            good = b.values[0][1]
+            if good > .5:
+                st.success("Your Draft Prospect " + " is "+ str((good*100).round(2))+ '%' +" likely to be successful.")
+                st.balloons()
+            elif good < .5:
+                st.error("Your Draft Prospect " + " is "+ str(((1-good)*100).round(2))+ '%' +" likely to be unsuccessful.")
 
 
 st.markdown('_Presented by Neel Ganta._')
